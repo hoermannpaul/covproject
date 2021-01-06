@@ -41,3 +41,4 @@ For training this data should be extracted and placed in `/data` directory in th
 ## Online References
 * Guide with U-net: https://medium.com/analytics-vidhya/humans-image-segmentation-with-unet-using-tensorflow-keras-fd6cb43b06e5
 * Blogpost from lecture notes: https://www.pyimagesearch.com/2017/09/11/object-detection-with-deep-learning-and-opencv/
+* Link for SSD multibox detection: https://arxiv.org/abs/1512.02325 (pdf also included in /ref)
