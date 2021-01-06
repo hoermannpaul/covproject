@@ -3,8 +3,10 @@ Repo containing everything COV project related.
 
 ## About
 
-Project is being executed for lecture `COV`, and implements SEG_1 part of assignment, which is person segmentation.
+Project is being executed for lecture `COV`, and implements `SEG_1` part of assignment, which is person segmentation.
 This means our solution should detect and mark parts in a picture belonging to a single person. This should also work if multiple people are visible within one image.
+
+*TODO add procedure here*
 
 ## Participants:
 
@@ -17,8 +19,15 @@ This means our solution should detect and mark parts in a picture belonging to a
 * doc: Project Documentation (latex)
 * src: Project Source (python)
 * ref: Project References (pdf / other)
+* presi: Project Presentation
 
 ## Setup
+
+### Data
+
+http://human-pose.mpi-inf.mpg.de/#download
+
+For training this data should be extracted and placed in `/data` directory in the repository root, same for the annotations.
 
 ### General
 * Clone Repo: `git clone git@github.com:poel22/covproject.git`
@@ -30,4 +39,4 @@ This means our solution should detect and mark parts in a picture belonging to a
 * TODO add src setup guide
 
 ## Online References
-* add links here
+* Guide with U-net: https://medium.com/analytics-vidhya/humans-image-segmentation-with-unet-using-tensorflow-keras-fd6cb43b06e5
