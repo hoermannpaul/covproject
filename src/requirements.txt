@@ -75,10 +75,10 @@ rsa==4.6
 scipy==1.6.0
 Send2Trash==1.5.0
 six==1.15.0
-tensorboard==2.4.0
-tensorboard-plugin-wit==1.7.0
-tensorflow==2.4.0
-tensorflow-estimator==2.4.0
+#tensorboard==2.4.0
+#tensorboard-plugin-wit==1.7.0
+#tensorflow==2.4.0 							!!! install this mess manually
+#tensorflow-estimator==2.4.0
 termcolor==1.1.0
 terminado==0.9.2
 testpath==0.4.4
