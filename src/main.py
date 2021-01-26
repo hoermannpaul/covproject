@@ -1,16 +1,33 @@
 import os
+import logging
+
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+logging.getLogger('tensorflow').setLevel(logging.FATAL)
 
 import numpy as np
-from PIL import Image, ImageOps
-
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from matplotlib import pyplot
-
 from tqdm import tqdm
+import tensorflow as tf
+import matplotlib.pyplot as plt
+from PIL import Image, ImageOps
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
 
 from unet import UNet
 
-size = 320, 180
+
+
+size = 256, 144
+
+
+def set_tf_loglevel(level):
+    if level >= logging.FATAL:
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+    if level >= logging.ERROR:
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
+    if level >= logging.WARNING:
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '1'
+    else:
+        os.environ['TF_CPP_MIN_LOG_LEVEL'] = '0'
+    logging.getLogger('tensorflow').setLevel(level)
 
 # read data into X(original images) and y(segmented images)
 # resize to largest image found (all share the same aspect reation)
@@ -69,13 +86,15 @@ def get_train_generator():
 
 def main():
     DATA_DIR = "data/"
-    # preprocess_data(DATA_DIR)
+    preprocess_data(DATA_DIR)
 
     train_generator = get_train_generator()
     model = UNet(size)
     model.compile(optimizer="adam", loss="binary_crossentropy", metrics=["acc"])
-    # print(model.summary())
+    model.fit()
+    print(model.summary())
 
 
 if __name__ == "__main__":
+    print("GPU") if len(tf.config.experimental.list_physical_devices('GPU')) > 0 else print("CPU")
     main()
