@@ -29,18 +29,22 @@ def set_tf_loglevel(level):
 def preprocess_data(data_dir, size):
     file_names = np.array(os.listdir(data_dir))
 
+    # might need tweaking if file names or sorting differs
     image_file_names = file_names[1::4]
     mask_file_names = file_names[3::4]
 
+    # combine masks of identical input image to combined masks
     prev_image_array = None
     prev_mask_arrays = []
 
     for index, (image_file_name, mask_file_name) in tqdm(enumerate(zip(image_file_names, mask_file_names))):
 
+        # resize images
         image = Image.open(os.path.join(data_dir, image_file_name))
         image_resized = image.resize(size, Image.ANTIALIAS)
         image_resized_array = np.asarray(image_resized)
-
+        
+        # resize, grayscale and binary threshold masks
         mask = Image.open(os.path.join(data_dir, mask_file_name))
         mask_resized = mask.resize(size, Image.ANTIALIAS)
         mask_resized_grayscale = ImageOps.grayscale(mask_resized)
@@ -63,6 +67,7 @@ def preprocess_data(data_dir, size):
 
             out_dir_image = "data/images"
             out_dir_mask = "data/masks"
+
             if not os.path.exists(out_dir_image):
                 os.makedirs(out_dir_image)
             if not os.path.exists(out_dir_mask):
@@ -82,12 +87,16 @@ def get_data_size(dir):
 def get_data(dir):
     file_names = np.array(os.listdir(dir))
     data = np.asarray([np.asarray(Image.open(os.path.join(dir, file_name))) for file_name in file_names])
+
+    # grayscale images only have 3 dims(num_images, height, width), but DataGenerator requires 4 dims(num_images, height, width, color_channels)
     if len(data.shape) < 4:
         data = np.expand_dims(data, 3)
     return data
 
 
 def get_data_generators(batch_size, dir):
+
+    # set parameters for data augmentation
     data_gen_args = dict(featurewise_center=True,
                         featurewise_std_normalization=True,
                         rotation_range=90,
@@ -101,6 +110,7 @@ def get_data_generators(batch_size, dir):
     images = get_data(os.path.join(dir, 'images'))
     masks = get_data(os.path.join(dir, 'masks'))
 
+    # set seed to transform images and masks equally
     seed = 1
 
     image_datagen.fit(images, seed=seed)
@@ -131,6 +141,8 @@ def main():
     DATA_SIZE = get_data_size(DATA_DIR)
     EPOCHS = 25
 
+    # TODO validation split
+
     # train
     for epoch in range(EPOCHS):
         print("Epoch {0}".format(epoch + 1))
@@ -144,7 +156,10 @@ def main():
             model.fit(image_batch, mask_batch)
             
             BATCH_ITERATION += 1
-            
+    
+    # TODO test, test split
+    # TODO visualize results
+
 
 if __name__ == "__main__":
     print("GPU") if len(tf.config.experimental.list_physical_devices('GPU')) > 0 else print("CPU")
