@@ -61,8 +61,15 @@ def preprocess_data(data_dir, size):
             image = Image.fromarray(prev_image_array)
             mask = Image.fromarray(combined_mask)
 
-            image.save("data/images/{0}.png".format(index))
-            mask.save("data/masks/{0}.png".format(index))
+            out_dir_image = "data/images"
+            out_dir_mask = "data/masks"
+            if not os.path.exists(out_dir_image):
+                os.makedirs(out_dir_image)
+            if not os.path.exists(out_dir_mask):
+                os.makedirs(out_dir_mask)
+
+            image.save(os.path.join(out_dir_image,"{0}.png".format(index)))
+            mask.save(os.path.join(out_dir_mask,"{0}.png".format(index)))
 
             prev_image_array = image_resized_array.copy()
             prev_mask_arrays = [mask_resized_grayscale_binary_array.copy()]
