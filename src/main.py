@@ -14,9 +14,6 @@ from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from unet import UNet
 
 
-size = 256, 144
-
-
 def set_tf_loglevel(level):
     if level >= logging.FATAL:
         os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -29,8 +26,8 @@ def set_tf_loglevel(level):
     logging.getLogger('tensorflow').setLevel(level)
 
 
-def preprocess_data(data_dir):
-    file_names = np.array(os.listdir(data_dir)[:])
+def preprocess_data(data_dir, size):
+    file_names = np.array(os.listdir(data_dir))
 
     image_file_names = file_names[1::4]
     mask_file_names = file_names[3::4]
@@ -71,9 +68,19 @@ def preprocess_data(data_dir):
             prev_mask_arrays = [mask_resized_grayscale_binary_array.copy()]
 
 
-def get_train_generator():
+def get_data_size(dir):
+    return len(os.listdir(os.path.join(dir, 'images')))
 
-    # we create two instances with the same arguments
+
+def get_data(dir):
+    file_names = np.array(os.listdir(dir))
+    data = np.asarray([np.asarray(Image.open(os.path.join(dir, file_name))) for file_name in file_names])
+    if len(data.shape) < 4:
+        data = np.expand_dims(data, 3)
+    return data
+
+
+def get_data_generators(batch_size, dir):
     data_gen_args = dict(featurewise_center=True,
                         featurewise_std_normalization=True,
                         rotation_range=90,
@@ -84,61 +91,53 @@ def get_train_generator():
     image_datagen = ImageDataGenerator(**data_gen_args)
     mask_datagen = ImageDataGenerator(**data_gen_args)
 
+    images = get_data(os.path.join(dir, 'images'))
+    masks = get_data(os.path.join(dir, 'masks'))
+
     seed = 1
-    # image_datagen.fit(images, augment=True, seed=seed)
-    # mask_datagen.fit(masks, augment=True, seed=seed)
 
-    image_generator = image_datagen.flow_from_directory(
-        'data/images',
-        class_mode=None,
-        classes=None,
-        target_size=size,
-        color_mode='rgb',
-        seed=seed)
+    image_datagen.fit(images, seed=seed)
+    mask_datagen.fit(masks, seed=seed)
 
-    mask_generator = mask_datagen.flow_from_directory(
-        'data/masks',
-        class_mode=None,
-        classes=None,
-        target_size=size,
-        color_mode='grayscale',
-        seed=seed)
+    image_generator = image_datagen.flow(images, batch_size=batch_size, seed=seed)
+    mask_generator = mask_datagen.flow(masks, batch_size=batch_size, seed=seed)
 
-    return zip(image_generator, mask_generator)
-    # seed = 909
-
-    # # ["constant", "nearest", "reflect", "wrap"]
-    # image_datagen = ImageDataGenerator(
-    #     width_shift_range=0.2,
-    #     height_shift_range=0.2,
-    #     rotation_range=90,
-    #     horizontal_flip=True,
-    #     vertical_flip=True,
-    #     brightness_range=[0.5, 1],
-    #     zoom_range=[0.5, 1],
-    #     fill_mode="reflect")
-
-    # mask_datagen = ImageDataGenerator(
-    #     width_shift_range=0.2,
-    #     height_shift_range=0.2,
-    #     rotation_range=90,
-    #     horizontal_flip=True,
-    #     vertical_flip=True,
-    #     brightness_range=[0.5, 1],
-    #     zoom_range=[0.5, 1],
-    #     fill_mode="reflect")
-
-    # image_generator = image_datagen.flow_from_directory("data/images/", target_size=size, class_mode=None, seed=seed)
-    # mask_generator = mask_datagen.flow_from_directory("data/masks/", target_size=size, color_mode='grayscale', class_mode=None, seed=seed)
-
-    # return image_generator, mask_generator
+    return image_generator, mask_generator
 
 
 def main():
     DATA_DIR = "data/"
-    preprocess_data(DATA_DIR)
+    SIZE = 256, 144
 
+    # preprocess inputs, combine masks and transform to grayscale binary
+    # preprocess_data(DATA_DIR, SIZE)
 
+    BATCH_SIZE = 25
+
+    image_generator, mask_generator = get_data_generators(BATCH_SIZE, DATA_DIR)
+
+    model = UNet(SIZE)
+
+    # TODO find correct metric and loss
+    model.compile(optimizer='adam', metrics=['acc'], loss='binary_crossentropy')
+
+    DATA_SIZE = get_data_size(DATA_DIR)
+    EPOCHS = 25
+
+    # train
+    for epoch in range(EPOCHS):
+        print("Epoch {0}".format(epoch + 1))
+        
+        BATCH_ITERATION = 1
+        for image_batch, mask_batch in zip(image_generator, mask_generator):
+
+            # break on overflow images if DATA_SIZE % BATCH_SIZE != 0
+            if BATCH_ITERATION * BATCH_SIZE > DATA_SIZE: break
+            
+            model.fit(image_batch, mask_batch)
+            
+            BATCH_ITERATION += 1
+            
 
 if __name__ == "__main__":
     print("GPU") if len(tf.config.experimental.list_physical_devices('GPU')) > 0 else print("CPU")
