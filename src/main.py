@@ -1,5 +1,6 @@
 import os
 import logging
+import shutil
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logging.getLogger('tensorflow').setLevel(logging.FATAL)
@@ -200,8 +201,48 @@ def main():
     # TODO visualize results
 
 
+def split_data():
+    inDir = "data\images_small"    
+    splits = 0.7,0.15,0.15
+    assert (splits[0] + splits[1] + splits[2]) == 1.0
+
+    img_filenames = os.listdir(inDir)    
+    size = len(img_filenames)
+
+    # determine split size
+    split_train = round(size * splits[0])
+    split_valid = round(size * splits[1])
+    split_test = round(size * splits[2])    
+    print("size", size)
+    print("split size", split_train, split_valid, split_test)
+    print("size", split_train + split_valid + split_test)    
+    assert size == (split_train + split_valid + split_test)
+
+    # shuffle 
+    np.random.shuffle(img_filenames)
+    train_set = img_filenames[:split_train]
+    valid_set = img_filenames[split_train:(split_train+split_valid)]
+    test_set = img_filenames[(split_train+split_valid):]
+    print(len(train_set), len(valid_set), len(test_set))
+    assert(len(train_set) + len(valid_set) + len(test_set) == size)
+
+    # create path
+    trainDir = os.path.join(inDir,"train")
+    validDir = os.path.join(inDir,"valid")
+    testDir = os.path.join(inDir,"test")
+
+    #source = "raw_data.csv"
+    #destination = "data"
+
+    #new_path = shutil.move(source, destination)
+
+    #print(new_path)
+
+
 if __name__ == "__main__":
     # os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
     os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
     print("GPU") if len(tf.config.experimental.list_physical_devices('GPU')) > 0 else print("CPU")
-    main()
+    #main()
+
+    split_data()
