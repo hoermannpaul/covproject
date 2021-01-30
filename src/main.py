@@ -85,7 +85,7 @@ def get_data_size(dir):
 
 
 def get_data(dir):
-    file_names = np.array(os.listdir(dir))
+    file_names = np.array(os.listdir(dir)[:-5])
     data = np.asarray([np.asarray(Image.open(os.path.join(dir, file_name))) for file_name in file_names])
 
     # grayscale images only have 3 dims(num_images, height, width), but DataGenerator requires 4 dims(num_images, height, width, color_channels)
@@ -97,9 +97,14 @@ def get_data(dir):
 def get_data_generators(batch_size, dir):
 
     # set parameters for data augmentation
-    data_gen_args = dict(featurewise_center=True,
-                        featurewise_std_normalization=True,
-                        rotation_range=90,
+    # data_gen_args = dict(featurewise_center=True,
+    #                     featurewise_std_normalization=True,
+    #                     rotation_range=90,
+    #                     width_shift_range=0.1,
+    #                     height_shift_range=0.1,
+    #                     zoom_range=0.2)
+
+    data_gen_args = dict(rotation_range=90,
                         width_shift_range=0.1,
                         height_shift_range=0.1,
                         zoom_range=0.2)
@@ -129,17 +134,23 @@ def main():
     # preprocess inputs, combine masks and transform to grayscale binary
     # preprocess_data(DATA_DIR, SIZE)
 
-    BATCH_SIZE = 25
+    BATCH_SIZE = 79
 
     image_generator, mask_generator = get_data_generators(BATCH_SIZE, DATA_DIR)
+
+    test_image_file_names = np.array(os.listdir(os.path.join(DATA_DIR, 'images/'))[-5:])
+    test_mask_file_names = np.array(os.listdir(os.path.join(DATA_DIR, 'masks/'))[-5:])
+    test_images = np.asarray([np.asarray(Image.open(os.path.join(os.path.join(DATA_DIR, 'images/'), test_image_file_name))) for test_image_file_name in test_image_file_names])
+    test_masks = np.asarray([np.asarray(Image.open(os.path.join(os.path.join(DATA_DIR, 'masks/'), test_mask_file_name))) for test_mask_file_name in test_mask_file_names])
+    
 
     model = UNet(SIZE)
 
     # TODO find correct metric and loss
-    model.compile(optimizer='adam', metrics=['acc'], loss='binary_crossentropy')
+    model.compile(optimizer='adam', metrics=['mse'], loss='mse')
 
     DATA_SIZE = get_data_size(DATA_DIR)
-    EPOCHS = 25
+    EPOCHS = 100
 
     # TODO validation split
 
@@ -156,11 +167,41 @@ def main():
             model.fit(image_batch, mask_batch)
             
             BATCH_ITERATION += 1
-    
+
+        
+        predicted_masks = model.predict(test_images)
+
+        if (epoch > 0) and (epoch % 10 == 0):
+            fig, ax = plt.subplots(5, 3)
+            fig.set_size_inches(14, 12)
+            for i in range(5): 
+                image = test_images[i]
+                mask = test_masks[i]
+                predicted_mask = predicted_masks[i]
+
+                ax[i][0].imshow(image)
+                if i == 0: ax[i][0].title.set_text('Image')
+                ax[i][0].axis('off')
+                
+                ax[i][1].imshow(mask)
+                if i == 0: ax[i][1].title.set_text('Mask')
+                ax[i][1].axis('off')
+                
+                ax[i][2].imshow(predicted_mask)
+                if i == 0: ax[i][2].title.set_text('Predicted Mask')
+                ax[i][2].axis('off')
+
+            plt.show()
+            plt.savefig("{0}.png".format(epoch))
+            plt.close()
+
     # TODO test, test split
+    
     # TODO visualize results
 
 
 if __name__ == "__main__":
+    # os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
+    os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
     print("GPU") if len(tf.config.experimental.list_physical_devices('GPU')) > 0 else print("CPU")
     main()
