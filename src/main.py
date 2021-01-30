@@ -1,4 +1,5 @@
 import os
+import pickle
 import logging
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -164,8 +165,9 @@ def main():
             # break on overflow images if DATA_SIZE % BATCH_SIZE != 0
             if BATCH_ITERATION * BATCH_SIZE > DATA_SIZE: break
             
-            model.fit(image_batch, mask_batch)
-            
+            history = model.fit(image_batch, mask_batch)
+            pickle.dump(history.history, open("histories/{0}.pickle".format(epoch), "wb"))
+
             BATCH_ITERATION += 1
   
         # every tenth epoch save weights and plot predictions
