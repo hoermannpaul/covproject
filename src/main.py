@@ -1,4 +1,5 @@
 import os
+import pickle
 import logging
 import shutil
 
@@ -165,14 +166,18 @@ def main():
             # break on overflow images if DATA_SIZE % BATCH_SIZE != 0
             if BATCH_ITERATION * BATCH_SIZE > DATA_SIZE: break
             
-            model.fit(image_batch, mask_batch)
-            
+            history = model.fit(image_batch, mask_batch)
+            pickle.dump(history.history, open("histories/{0}.pickle".format(epoch), "wb"))
+
             BATCH_ITERATION += 1
-
-        
-        predicted_masks = model.predict(test_images)
-
+  
+        # every tenth epoch save weights and plot predictions
         if (epoch > 0) and (epoch % 10 == 0):
+
+            model.save_weights("weights/{0}.ckpt".format(epoch))
+
+            predicted_masks = model.predict(test_images)
+
             fig, ax = plt.subplots(5, 3)
             fig.set_size_inches(14, 12)
             for i in range(5): 
@@ -192,9 +197,9 @@ def main():
                 if i == 0: ax[i][2].title.set_text('Predicted Mask')
                 ax[i][2].axis('off')
 
-            plt.show()
-            plt.savefig("{0}.png".format(epoch))
-            plt.close()
+            # plt.show()
+            fig.savefig("plots/{0}.png".format(epoch))
+            # plt.close()
 
     # TODO test, test split
     
