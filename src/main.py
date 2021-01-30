@@ -82,12 +82,89 @@ def preprocess_data(data_dir, size):
             prev_mask_arrays = [mask_resized_grayscale_binary_array.copy()]
 
 
-def get_data_size(dir):
-    return len(os.listdir(os.path.join(dir, 'images')))
+def split_data():
+    inDir_img = "data/images"    
+    inDir_mask = "data/masks"    
+    splits = 0.7,0.15,0.15
+    assert (splits[0] + splits[1] + splits[2]) == 1.0
+
+    img_filenames = os.listdir(inDir_img)    
+    size = len(img_filenames)
+
+    # determine split size
+    split_train = int(size * splits[0])
+    split_valid = int(size * splits[1])
+    split_test = int(size * splits[2])    
+    print("size", size)
+    print("split size", split_train, split_valid, split_test)
+    print("size", split_train + split_valid + split_test)    
+    #assert size == (split_train + split_valid + split_test)
+
+    # shuffle 
+    np.random.shuffle(img_filenames)
+    train_set = img_filenames[:split_train]
+    valid_set = img_filenames[split_train:(split_train+split_valid)]
+    test_set = img_filenames[(split_train+split_valid):]
+    print("final set size: ", len(train_set), len(valid_set), len(test_set))
+    assert(len(train_set) + len(valid_set) + len(test_set) == size)
+
+    # create path for images
+    trainDir = os.path.join(inDir_img,"train")
+    validDir = os.path.join(inDir_img,"valid")
+    testDir = os.path.join(inDir_img,"test")
+    if not os.path.exists(trainDir):
+        os.makedirs(trainDir)
+    if not os.path.exists(validDir):
+        os.makedirs(validDir)
+    if not os.path.exists(testDir):
+        os.makedirs(testDir)
+    
+    # move images
+    for f in train_set:
+        source = os.path.join(inDir_img, f)
+        destination = os.path.join(trainDir, f)
+        shutil.move(source, destination)
+    for f in valid_set:
+        source = os.path.join(inDir_img, f)
+        destination = os.path.join(validDir, f)
+        shutil.move(source, destination)
+    for f in test_set:
+        source = os.path.join(inDir_img, f)
+        destination = os.path.join(testDir, f)
+        shutil.move(source, destination)
+
+    # create path for masks
+    trainDir = os.path.join(inDir_mask,"train")
+    validDir = os.path.join(inDir_mask,"valid")
+    testDir = os.path.join(inDir_mask,"test")
+    if not os.path.exists(trainDir):
+        os.makedirs(trainDir)
+    if not os.path.exists(validDir):
+        os.makedirs(validDir)
+    if not os.path.exists(testDir):
+        os.makedirs(testDir)
+
+    # move masks
+    for f in train_set:
+        source = os.path.join(inDir_mask, f)
+        destination = os.path.join(trainDir, f)
+        shutil.move(source, destination)
+    for f in valid_set:
+        source = os.path.join(inDir_mask, f)
+        destination = os.path.join(validDir, f)
+        shutil.move(source, destination)
+    for f in test_set:
+        source = os.path.join(inDir_mask, f)
+        destination = os.path.join(testDir, f)
+        shutil.move(source, destination)
+
+
+def get_data_size(dir, dataset):
+    return len(os.listdir(os.path.join(dir, dataset)))
 
 
 def get_data(dir):
-    file_names = np.array(os.listdir(dir)[:-5])
+    file_names = np.array(os.listdir(dir))
     data = np.asarray([np.asarray(Image.open(os.path.join(dir, file_name))) for file_name in file_names])
 
     # grayscale images only have 3 dims(num_images, height, width), but DataGenerator requires 4 dims(num_images, height, width, color_channels)
@@ -114,8 +191,8 @@ def get_data_generators(batch_size, dir):
     image_datagen = ImageDataGenerator(**data_gen_args)
     mask_datagen = ImageDataGenerator(**data_gen_args)
 
-    images = get_data(os.path.join(dir, 'images'))
-    masks = get_data(os.path.join(dir, 'masks'))
+    images = get_data(os.path.join(dir, 'images/train'))
+    masks = get_data(os.path.join(dir, 'masks/train'))
 
     # set seed to transform images and masks equally
     seed = 1
@@ -135,23 +212,31 @@ def main():
 
     # preprocess inputs, combine masks and transform to grayscale binary
     # preprocess_data(DATA_DIR, SIZE)
+    # split_data()
 
-    BATCH_SIZE = 79
+    BATCH_SIZE = 512
 
     image_generator, mask_generator = get_data_generators(BATCH_SIZE, DATA_DIR)
 
-    test_image_file_names = np.array(os.listdir(os.path.join(DATA_DIR, 'images/'))[-5:])
-    test_mask_file_names = np.array(os.listdir(os.path.join(DATA_DIR, 'masks/'))[-5:])
-    test_images = np.asarray([np.asarray(Image.open(os.path.join(os.path.join(DATA_DIR, 'images/'), test_image_file_name))) for test_image_file_name in test_image_file_names])
-    test_masks = np.asarray([np.asarray(Image.open(os.path.join(os.path.join(DATA_DIR, 'masks/'), test_mask_file_name))) for test_mask_file_name in test_mask_file_names])
+    # test_image_file_names = np.array(os.listdir(os.path.join(DATA_DIR, 'images/'))[-5:])
+    # test_mask_file_names = np.array(os.listdir(os.path.join(DATA_DIR, 'masks/'))[-5:])
+    # test_images = np.asarray([np.asarray(Image.open(os.path.join(os.path.join(DATA_DIR, 'images/'), test_image_file_name))) for test_image_file_name in test_image_file_names])
+    # test_masks = np.asarray([np.asarray(Image.open(os.path.join(os.path.join(DATA_DIR, 'masks/'), test_mask_file_name))) for test_mask_file_name in test_mask_file_names])
     
+    # valid data
+    val_images = get_data("data/images/valid")
+    val_masks = get_data("data/masks/valid")
+
+    # test data
+    test_images = get_data("data/images/test")
+    test_masks = get_data("data/masks/test")
 
     model = UNet(SIZE)
 
     # TODO find correct metric and loss
     model.compile(optimizer='adam', metrics=['mse'], loss='mse')
 
-    DATA_SIZE = get_data_size(DATA_DIR)
+    DATA_SIZE = get_data_size(DATA_DIR, "images/train")
     EPOCHS = 100
 
     # TODO validation split
@@ -189,11 +274,11 @@ def main():
                 if i == 0: ax[i][0].title.set_text('Image')
                 ax[i][0].axis('off')
                 
-                ax[i][1].imshow(mask)
+                ax[i][1].imshow(np.squeeze(mask))
                 if i == 0: ax[i][1].title.set_text('Mask')
                 ax[i][1].axis('off')
                 
-                ax[i][2].imshow(predicted_mask)
+                ax[i][2].imshow(np.squeeze(predicted_mask))
                 if i == 0: ax[i][2].title.set_text('Predicted Mask')
                 ax[i][2].axis('off')
 
@@ -206,48 +291,11 @@ def main():
     # TODO visualize results
 
 
-def split_data():
-    inDir = "data\images_small"    
-    splits = 0.7,0.15,0.15
-    assert (splits[0] + splits[1] + splits[2]) == 1.0
 
-    img_filenames = os.listdir(inDir)    
-    size = len(img_filenames)
-
-    # determine split size
-    split_train = round(size * splits[0])
-    split_valid = round(size * splits[1])
-    split_test = round(size * splits[2])    
-    print("size", size)
-    print("split size", split_train, split_valid, split_test)
-    print("size", split_train + split_valid + split_test)    
-    assert size == (split_train + split_valid + split_test)
-
-    # shuffle 
-    np.random.shuffle(img_filenames)
-    train_set = img_filenames[:split_train]
-    valid_set = img_filenames[split_train:(split_train+split_valid)]
-    test_set = img_filenames[(split_train+split_valid):]
-    print(len(train_set), len(valid_set), len(test_set))
-    assert(len(train_set) + len(valid_set) + len(test_set) == size)
-
-    # create path
-    trainDir = os.path.join(inDir,"train")
-    validDir = os.path.join(inDir,"valid")
-    testDir = os.path.join(inDir,"test")
-
-    #source = "raw_data.csv"
-    #destination = "data"
-
-    #new_path = shutil.move(source, destination)
-
-    #print(new_path)
 
 
 if __name__ == "__main__":
     # os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
     os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
     print("GPU") if len(tf.config.experimental.list_physical_devices('GPU')) > 0 else print("CPU")
-    #main()
-
-    split_data()
+    main()
