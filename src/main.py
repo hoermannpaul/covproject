@@ -2,6 +2,7 @@ import os
 import logging
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+#os.environ['CUDA_VISIBLE_DEVICES'] = '-1'
 logging.getLogger('tensorflow').setLevel(logging.FATAL)
 
 import numpy as np
@@ -9,7 +10,13 @@ from tqdm import tqdm
 import tensorflow as tf
 import matplotlib.pyplot as plt
 from PIL import Image, ImageOps
+from tensorflow import keras
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.compat.v1 import ConfigProto
+from tensorflow.compat.v1 import InteractiveSession
+config = ConfigProto()
+config.gpu_options.allow_growth = True
+session = InteractiveSession(config=config)
 
 from unet import UNet
 
@@ -81,7 +88,7 @@ def preprocess_data(data_dir, size):
 
 
 def get_data_size(dir):
-    return len(os.listdir(os.path.join(dir, 'images')))
+    return len(os.listdir(os.path.join(dir, 'images', 'img')))
 
 
 def get_data(dir):
@@ -107,8 +114,8 @@ def get_data_generators(batch_size, dir):
     image_datagen = ImageDataGenerator(**data_gen_args)
     mask_datagen = ImageDataGenerator(**data_gen_args)
 
-    images = get_data(os.path.join(dir, 'images'))
-    masks = get_data(os.path.join(dir, 'masks'))
+    images = get_data(os.path.join(dir, 'images', 'img'))
+    masks = get_data(os.path.join(dir, 'masks', 'img'))
 
     # set seed to transform images and masks equally
     seed = 1
@@ -120,6 +127,19 @@ def get_data_generators(batch_size, dir):
     mask_generator = mask_datagen.flow(masks, batch_size=batch_size, seed=seed)
 
     return image_generator, mask_generator
+
+def display(display_list, batch):
+  plt.figure(figsize=(15, 15))
+
+  title = ['Input Image', 'True Mask', 'Predicted Mask']
+
+  for i in range(len(display_list)):
+    plt.subplot(1, len(display_list), i+1)
+    plt.title(title[i])
+    plt.imshow(display_list[i])
+    plt.axis('off')
+  plt.savefig(f"plot{batch}.png")
+
 
 
 def main():
@@ -136,16 +156,25 @@ def main():
     model = UNet(SIZE)
 
     # TODO find correct metric and loss
-    model.compile(optimizer='adam', metrics=['acc'], loss='binary_crossentropy')
+    model.compile(optimizer='adam', metrics=['mse'], loss='binary_crossentropy')
 
-    DATA_SIZE = get_data_size(DATA_DIR)
+    keras.utils.plot_model(model, show_shapes=True)
+
+    DATA_SIZE = 250#get_data_size(DATA_DIR)
+
+    print(f"nr. of images: {DATA_SIZE}")
     EPOCHS = 25
+
+    test_img = np.asarray(Image.open("data/images/999.png"))
+    test_mask = np.asarray(Image.open("data/masks/999.png"))
 
     # TODO validation split
 
+    histories = []
+
     # train
     for epoch in range(EPOCHS):
-        print("Epoch {0}".format(epoch + 1))
+        print(f"Epoch {epoch + 1}/{EPOCHS}")
         
         BATCH_ITERATION = 1
         for image_batch, mask_batch in zip(image_generator, mask_generator):
@@ -153,9 +182,13 @@ def main():
             # break on overflow images if DATA_SIZE % BATCH_SIZE != 0
             if BATCH_ITERATION * BATCH_SIZE > DATA_SIZE: break
             
-            model.fit(image_batch, mask_batch)
-            
+            histories.append(model.fit(image_batch, mask_batch))
+
             BATCH_ITERATION += 1
+
+        test_pred = model.predict(np.expand_dims(test_img, axis=0))
+
+        display([test_img, np.expand_dims(test_mask, 2), test_pred[0]], epoch)
     
     # TODO test, test split
     # TODO visualize results
