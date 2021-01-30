@@ -1,6 +1,5 @@
 from tensorflow import keras
 
-
 def down_block(x, filters, kernel_size=(3, 3), padding="same", strides=1):
     c = keras.layers.Conv2D(filters, kernel_size, padding=padding, strides=strides, activation="relu")(x)
     c = keras.layers.Conv2D(filters, kernel_size, padding=padding, strides=strides, activation="relu")(c)
@@ -37,6 +36,11 @@ def UNet(size):
     u3 = up_block(u2, c2, f[1]) #32 -> 64
     u4 = up_block(u3, c1, f[0]) #64 -> 128
     
-    outputs = keras.layers.Conv2D(1, (1, 1), padding="same", activation="sigmoid")(u4)
+    #outputs = keras.layers.Conv2D(1, (1, 1), padding="same", activation="sigmoid")(u4)
+
+    outputs = keras.layers.Conv2DTranspose(
+      1, 3, strides=1,
+      padding='same')(u4)
+    
     model = keras.models.Model(inputs, outputs)
     return model
