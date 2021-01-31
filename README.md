@@ -42,3 +42,6 @@ For training this data should be extracted and placed in `/data` directory in th
 * Guide with U-net: https://medium.com/analytics-vidhya/humans-image-segmentation-with-unet-using-tensorflow-keras-fd6cb43b06e5
 * Blogpost from lecture notes: https://www.pyimagesearch.com/2017/09/11/object-detection-with-deep-learning-and-opencv/
 * Link for SSD multibox detection: https://arxiv.org/abs/1512.02325 (pdf also included in /ref)
+* Blogpost Semantic Segmentation: https://towardsdatascience.com/understanding-semantic-segmentation-with-unet-6be4f42d4b47
+* Blogpost Transposed Convolution: https://naokishibuya.medium.com/up-sampling-with-transposed-convolution-9ae4f2df52d0
+* Guide Feature Map Visualization: https://www.analyticsvidhya.com/blog/2020/11/tutorial-how-to-visualize-feature-maps-directly-from-cnn-layers/
