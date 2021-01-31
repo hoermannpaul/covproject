@@ -36,7 +36,7 @@ def UNet(size):
     u3 = up_block(u2, c2, f[1]) #32 -> 64
     u4 = up_block(u3, c1, f[0]) #64 -> 128
     
-    #outputs = keras.layers.Conv2D(1, (1, 1), padding="same", activation="sigmoid")(u4)
+    #outputs = keras.layers.Conv2D(1, 1, padding="same", activation="sigmoid")(u4)
 
     outputs = keras.layers.Conv2DTranspose(
       1, 3, strides=1,
