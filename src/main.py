@@ -2,6 +2,7 @@ import os
 import pickle
 import logging
 import shutil
+from datetime import datetime
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 logging.getLogger('tensorflow').setLevel(logging.FATAL)
@@ -242,8 +243,10 @@ def main():
     # TODO validation split
 
     # train
+    start = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
     for epoch in range(EPOCHS):
-        print("Epoch {0}".format(epoch + 1))
+        now = datetime.now().strftime("%Y/%m/%d %H:%M:%S")
+        print("[{0} - {1} Epoch {2}]".format(start, now, epoch + 1))
         
         BATCH_ITERATION = 1
         for image_batch, mask_batch in zip(image_generator, mask_generator):
@@ -251,7 +254,7 @@ def main():
             # break on overflow images if DATA_SIZE % BATCH_SIZE != 0
             if BATCH_ITERATION * BATCH_SIZE > DATA_SIZE: break
             
-            history = model.fit(image_batch, mask_batch)
+            history = model.fit(image_batch, mask_batch, validation_data=(val_images, val_masks))
             pickle.dump(history.history, open("histories/{0}.pickle".format(epoch), "wb"))
 
             BATCH_ITERATION += 1
