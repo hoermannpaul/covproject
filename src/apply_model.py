@@ -13,8 +13,8 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import pickle
-from scipy.spatial import distance
-
+from sklearn.metrics import jaccard_similarity_score
+from sklearn.metrics import jaccard_score
 #%%
 
 test_images = get_data("data/images/test")
@@ -51,8 +51,10 @@ ground_truths_flat = ground_truths.flatten()
 
 # -----------------------------------------------------------------------------------
 jaccards = []
+jaccard_norm = 0
 from tqdm import tqdm
-for threshold in tqdm(range(0,256,1)):
+for threshold in tqdm(range(0,256,1)):    
+    
     jaccard = 0    
     for prediction, ground_truth in zip(predictions, ground_truths):        
         prediction = prediction.flatten()
@@ -71,7 +73,9 @@ for threshold in tqdm(range(0,256,1)):
         # ground_truth[ground_truth >= threshold] = 1
         # ground_truth = ground_truth.astype(np.int32)
 
-        jaccard += distance.jaccard(ground_truth, prediction)
+        #score = jaccard_score(ground_truth, prediction)
+        score = jaccard_similarity_score(ground_truth, prediction) # deprecated
+        jaccard += score
         
     jaccard = jaccard / predictions.shape[0]    
     jaccards.append(jaccard)
@@ -84,8 +88,14 @@ print("DONE")
 # -----------------------------------------------------------------------------------
 import pickle
 import matplotlib.pyplot as plt
+import numpy as np
 jac = pickle.load(open("src/jaccard.pickle", "rb"))
+jac_max = np.array(jac).max()
 plt.plot(range(0,256,1),jac)
 plt.xlabel("threshold")
 plt.ylabel("jaccard")
+plt.hlines(jac_max, 0, 256, linestyles="dashed")
+plt.text(0, 0.9, round(jac_max,2))
+plt.title("Jaccard similarity score")
+plt.grid()
 plt.show()
