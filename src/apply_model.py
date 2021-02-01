@@ -89,7 +89,7 @@ print("DONE")
 import pickle
 import matplotlib.pyplot as plt
 import numpy as np
-jac = pickle.load(open("src/jaccard.pickle", "rb"))
+jac = pickle.load(open("../src/jaccard.pickle", "rb"))
 jac_max = np.array(jac).max()
 plt.plot(range(0,256,1),jac)
 plt.xlabel("threshold")
